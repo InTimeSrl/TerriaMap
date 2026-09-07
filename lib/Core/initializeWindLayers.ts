@@ -36,6 +36,7 @@ export type CesiumViewerLike = {
   scene: {
     camera: unknown;
     canvas: HTMLCanvasElement;
+    globe?: unknown;
   };
   camera: {
     flyTo?: (...args: unknown[]) => void;
@@ -89,11 +90,7 @@ function normalizeViewer(candidate: unknown): CesiumViewerLike | undefined {
 
   return {
     ...(rawViewer as object),
-    scene: {
-      ...scene,
-      camera,
-      canvas
-    },
+    scene: scene as CesiumViewerLike["scene"],
     camera,
     canvas
   } as CesiumViewerLike;
@@ -179,32 +176,6 @@ export async function fetchWindFieldPayload(
   }
 
   return (await response.json()) as WindFieldPayload;
-}
-
-export function getConfiguredWindLayer(
-  terria: unknown,
-  layerId: string | undefined
-): ConfiguredWindLayer {
-  const configuredLayers = (terria as Record<string, any>)?.configParameters
-    ?.windLayers;
-
-  if (!Array.isArray(configuredLayers) || configuredLayers.length === 0) {
-    throw new Error("No wind layers are configured in config.json.");
-  }
-
-  if (!layerId) {
-    throw new Error("A wind-layer catalog item requires a layerId.");
-  }
-
-  const matchedLayer = configuredLayers.find(
-    (layer: ConfiguredWindLayer) => layer.id === layerId
-  );
-
-  if (!matchedLayer) {
-    throw new Error(`Unknown wind layer \"${layerId}\".`);
-  }
-
-  return matchedLayer;
 }
 
 export function getWindLayerOptions(

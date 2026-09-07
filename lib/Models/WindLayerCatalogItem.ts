@@ -1,8 +1,15 @@
-import { computed, makeObservable, observable, override, runInAction } from "mobx";
+import {
+  computed,
+  IReactionDisposer,
+  makeObservable,
+  observable,
+  override,
+  reaction,
+  runInAction
+} from "mobx";
 import { WindData, WindLayer } from "cesium-wind-layer";
 import CatalogMemberMixin from "terriajs/lib/ModelMixins/CatalogMemberMixin";
 import MappableMixin, { MapItem } from "terriajs/lib/ModelMixins/MappableMixin";
-import TerriaError from "terriajs/lib/Core/TerriaError";
 import CatalogMemberFactory from "terriajs/lib/Models/Catalog/CatalogMemberFactory";
 import CreateModel from "terriajs/lib/Models/Definition/CreateModel";
 import { ModelConstructorParameters } from "terriajs/lib/Models/Definition/Model";
@@ -11,7 +18,6 @@ import {
   CesiumViewerLike,
   ConfiguredWindLayer,
   fetchWindFieldPayload,
-  getConfiguredWindLayer,
   getWindLayerOptions,
   normalizeWindData,
   waitForCesiumViewer
@@ -26,10 +32,20 @@ export default class WindLayerCatalogItem extends MappableMixin(
   @observable private windData: WindData | undefined;
   @observable private cesiumViewer: CesiumViewerLike | undefined;
   @observable.ref private windLayer: WindLayer | undefined;
+  private readonly disposeShowReaction: IReactionDisposer;
 
   constructor(...args: ModelConstructorParameters) {
     super(...args);
     makeObservable(this);
+
+    this.disposeShowReaction = reaction(
+      () => this.show,
+      (show) => {
+        if (this.windLayer) {
+          this.windLayer.show = show;
+        }
+      }
+    );
   }
 
   get type() {
@@ -42,53 +58,59 @@ export default class WindLayerCatalogItem extends MappableMixin(
   }
 
   protected async forceLoadMapItems(): Promise<void> {
-    const windConfig = getConfiguredWindLayer(this.terria, this.layerId);
+    if (!this.url) {
+      throw new Error("A wind-layer catalog item requires a url property.");
+    }
+
+    const windConfig: ConfiguredWindLayer = {
+      id: this.uniqueId,
+      name: this.name,
+      url: this.url,
+      zoomOnLoad: this.zoomOnLoad,
+      zoomDuration: this.zoomDuration,
+      options: this.options as ConfiguredWindLayer["options"]
+    };
+
     const [viewer, payload] = await Promise.all([
       waitForCesiumViewer(this.terria),
       fetchWindFieldPayload(
         windConfig.url,
-        windConfig.name ?? windConfig.id ?? this.layerId ?? this.uniqueId
+        windConfig.name ?? windConfig.id ?? this.uniqueId
       )
     ]);
 
+    const windData = normalizeWindData(payload);
+    const existingLayer = this.windLayer;
+    const windLayer = new WindLayer(
+      viewer,
+      windData,
+      getWindLayerOptions(windConfig)
+    );
+    windLayer.show = this.show;
+
     runInAction(() => {
+      if (existingLayer && !existingLayer.isDestroyed()) {
+        existingLayer.destroy();
+      }
+
       this.cesiumViewer = viewer;
       this.windConfig = windConfig;
-      this.windData = normalizeWindData(payload);
+      this.windData = windData;
+      this.windLayer = windLayer;
     });
+
+    if (windConfig.zoomOnLoad) {
+      windLayer.zoomTo(windConfig.zoomDuration ?? 0);
+    }
   }
 
   @computed
   get mapItems(): MapItem[] {
-    if (
-      this.isLoadingMapItems ||
-      !this.show ||
-      this.windConfig === undefined ||
-      this.windData === undefined ||
-      this.cesiumViewer === undefined
-    ) {
-      this.destroyWindLayer();
-      return [];
-    }
-
-    if (!this.windLayer) {
-      this.windLayer = new WindLayer(
-        this.cesiumViewer,
-        this.windData,
-        getWindLayerOptions(this.windConfig)
-      );
-
-      if (this.windConfig.zoomOnLoad) {
-        this.windLayer.zoomTo(this.windConfig.zoomDuration ?? 0);
-      }
-    } else {
-      this.windLayer.show = true;
-    }
-
     return [];
   }
 
   dispose() {
+    this.disposeShowReaction();
     this.destroyWindLayer();
     super.dispose();
   }
