@@ -33,6 +33,7 @@
     "@typescript-eslint/eslint-plugin": "^8.58.1",
     "@typescript-eslint/parser": "^8.58.1",
     "babel-loader": "^10.1.1",
+    "cesium-wind-layer": "^0.10.1",
     "css-loader": "^7.1.4",
     "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",

@@ -8,6 +8,7 @@ import ViewState from "terriajs/lib/ReactViewModels/ViewState";
 import registerCustomComponentTypes from "terriajs/lib/ReactViews/Custom/registerCustomComponentTypes";
 import updateApplicationOnHashChange from "terriajs/lib/ViewModels/updateApplicationOnHashChange";
 import updateApplicationOnMessageFromParentWindow from "terriajs/lib/ViewModels/updateApplicationOnMessageFromParentWindow";
+import "./lib/Models/WindLayerCatalogItem";
 import loadPlugins from "./lib/Core/loadPlugins";
 import showGlobalDisclaimer from "./lib/Views/showGlobalDisclaimer";
 import plugins from "./plugins";

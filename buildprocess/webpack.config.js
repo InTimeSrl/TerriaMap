@@ -129,6 +129,7 @@ module.exports = function ({ devMode, baseHref = "/" }) {
   };
   config.resolve.alias["terriajs-variables"] =
     require.resolve("../lib/Styles/variables-overrides.scss");
+  config.resolve.alias["cesium"] = require.resolve("terriajs-cesium");
 
   return configureWebpackForPlugins(
     configureWebpackForTerriaJS({
