@@ -33,6 +33,7 @@ export default class WindLayerCatalogItem extends MappableMixin(
   @observable private cesiumViewer: CesiumViewerLike | undefined;
   @observable.ref private windLayer: WindLayer | undefined;
   private readonly disposeShowReaction: IReactionDisposer;
+  private readonly disposeWorkbenchReaction: IReactionDisposer;
 
   constructor(...args: ModelConstructorParameters) {
     super(...args);
@@ -40,11 +41,12 @@ export default class WindLayerCatalogItem extends MappableMixin(
 
     this.disposeShowReaction = reaction(
       () => this.show,
-      (show) => {
-        if (this.windLayer) {
-          this.windLayer.show = show;
-        }
-      }
+      () => this.syncWindLayerVisibility()
+    );
+
+    this.disposeWorkbenchReaction = reaction(
+      () => this.terria.workbench.contains(this),
+      () => this.syncWindLayerVisibility()
     );
   }
 
@@ -86,7 +88,6 @@ export default class WindLayerCatalogItem extends MappableMixin(
       windData,
       getWindLayerOptions(windConfig)
     );
-    windLayer.show = this.show;
 
     runInAction(() => {
       if (existingLayer && !existingLayer.isDestroyed()) {
@@ -98,6 +99,8 @@ export default class WindLayerCatalogItem extends MappableMixin(
       this.windData = windData;
       this.windLayer = windLayer;
     });
+
+    this.syncWindLayerVisibility();
 
     if (windConfig.zoomOnLoad) {
       windLayer.zoomTo(windConfig.zoomDuration ?? 0);
@@ -111,8 +114,17 @@ export default class WindLayerCatalogItem extends MappableMixin(
 
   dispose() {
     this.disposeShowReaction();
+    this.disposeWorkbenchReaction();
     this.destroyWindLayer();
     super.dispose();
+  }
+
+  private syncWindLayerVisibility() {
+    if (!this.windLayer || this.windLayer.isDestroyed()) {
+      return;
+    }
+
+    this.windLayer.show = this.show && this.terria.workbench.contains(this);
   }
 
   private destroyWindLayer() {
