@@ -6,12 +6,14 @@ import ShareDataService from "terriajs/lib/Models/ShareDataService";
 import Terria from "terriajs/lib/Models/Terria";
 import ViewState from "terriajs/lib/ReactViewModels/ViewState";
 import registerCustomComponentTypes from "terriajs/lib/ReactViews/Custom/registerCustomComponentTypes";
+import CustomComponent from "terriajs/lib/ReactViews/Custom/CustomComponent";
 import updateApplicationOnHashChange from "terriajs/lib/ViewModels/updateApplicationOnHashChange";
 import updateApplicationOnMessageFromParentWindow from "terriajs/lib/ViewModels/updateApplicationOnMessageFromParentWindow";
 import "./lib/Models/WindLayerCatalogItem";
 import loadPlugins from "./lib/Core/loadPlugins";
 import showGlobalDisclaimer from "./lib/Views/showGlobalDisclaimer";
 import plugins from "./plugins";
+import ChartCustomComponentNoPreview from "./lib/Models/ChartCustomComponentNoPreview";
 
 const terriaOptions = {
   baseUrl: "build/TerriaJS"
@@ -44,6 +46,13 @@ registerSearchProviders();
 // Register custom components in the core TerriaJS.  If you only want to register a subset of them, or to add your own,
 // insert your custom version of the code in the registerCustomComponentTypes function here instead.
 registerCustomComponentTypes(terria);
+
+// Sostituisce il componente "chart" di default con la versione che supporta
+// l'attributo hide-preview-chart="true" (nasconde il grafico inline nella
+// Feature Info mantenendo il pulsante Expand). Deve essere l'ULTIMA chiamata
+// relativa alla registrazione di "chart", altrimenti una successiva
+// registerCustomComponentTypes() la sovrascriverebbe.
+CustomComponent.register(new ChartCustomComponentNoPreview());
 
 if (process.env.NODE_ENV === "development") {
   window.viewState = viewState;

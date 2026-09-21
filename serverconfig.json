@@ -3,6 +3,7 @@
 
   "allowProxyFor": [
     "githubusercontent.com",
+    "radar-geowebcache.protezionecivile.it",
 
     // NOTE: The following default entries are deprecated and will be removed in a future release. If you rely ony terria proxying to any of these servers, please add them through a custom serverconfig.json. See https://docs.terria.io/guide/getting-started/#customizing-terriamap
     "nicta.com.au",
